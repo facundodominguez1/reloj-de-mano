@@ -1,0 +1,93 @@
+#include <Arduino.h>
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>      //libreria para el oled 
+#include <Adafruit_SSD1306.h>  //libreria para el integrado del oled
+#include <ESP32Time.h>         //libreria para el RTC del esp32
+#include <esp_sleep.h>         //libreria para el DEEP SLEEP
+#include "driver/rtc_io.h"
+
+#define sda 8
+#define scl 9
+#define boton 20
+
+#define WAKEUP_PIN 2  // Usá cualquier GPIO válido
+
+unsigned long tiempo = millis();
+
+ESP32Time rtc;
+
+#define ancho 128
+#define alto 32
+#define oled_reset -1
+
+int t1=0;
+
+Adafruit_SSD1306 oled (ancho, alto, &Wire, oled_reset);
+
+        
+
+void hacerDS(){
+  Serial.println("volviendo a iniciar DEEP SLEEP");
+  delay(1000);
+  oled.ssd1306_command(SSD1306_DISPLAYOFF);
+  delay(2000);
+  esp_deep_sleep_start();
+}
+
+void setup() {
+  Wire.begin(sda, scl);
+  oled.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  oled.clearDisplay();
+  oled.display();
+
+  pinMode(boton, INPUT);
+  pinMode(WAKEUP_PIN, INPUT);
+
+  esp_deep_sleep_enable_gpio_wakeup(1ULL << WAKEUP_PIN, ESP_GPIO_WAKEUP_GPIO_HIGH);
+
+ //Setear hora solo la primera vez
+  if (rtc.getYear() < 2022) {
+    rtc.setTime(50, 40, 19, 25, 9, 2025); //hora, minutos, segundos, dia, mes y año
+  }
+}
+
+void loop() {
+  int estado;
+  int t=millis();
+
+  if (t - t1 > 1000) {
+    t1 = t;
+    //estado= !estado;
+  }
+  
+  //muestra la hora
+  if (digitalRead(boton) == HIGH){
+
+
+    oled.ssd1306_command(SSD1306_DISPLAYON);
+    oled.clearDisplay();
+    oled.setTextColor(WHITE);
+
+    oled.setTextSize(1);
+    oled.setCursor(0, 0);
+    oled.print(rtc.getTime("%d/%m/%Y"));
+
+    oled.setTextSize(2);  
+    oled.setCursor(10, 10);
+    oled.print(rtc.getTime("%H:%M"));
+
+    oled.setTextSize(1);
+    oled.setCursor(100, 24);
+    oled.print(rtc.getTime("%S"));
+
+    oled.display(); 
+  }
+  else {
+      oled.ssd1306_command(SSD1306_DISPLAYOFF); // si el botón NO está presionado, apagá el OLED
+  }
+
+  if(t>10000){
+    hacerDS();
+  }
+}
