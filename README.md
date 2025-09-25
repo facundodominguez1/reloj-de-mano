@@ -1,4 +1,4 @@
-# SmartWatch - Proyecto DIY
+# SmartWatch
 
 Este es un proyecto realizado con la finalidad de recrear un **SmartWatch**.  
 A medida que se actualice y mejore, se irán subiendo las mejoras de cada versión.
